@@ -370,28 +370,6 @@ gantt
 | Tempo > 5 min | Média | Médio | Timeout + resultado parcial |
 | Crash durante demo | Baixa | Alto | Video backup + deploy redundante |
 
-## 📝 Checklist Pré-Apresentação
-
-### Técnico
-- [ ] Sistema deployado e estável
-- [ ] 3 análises de exemplo prontas
-- [ ] Video de backup gravado
-- [ ] Internet backup (4G)
-
-### Apresentação
-- [ ] Slides prontos (5 slides max)
-- [ ] Demo script ensaiado
-- [ ] Respostas para perguntas óbvias
-- [ ] Cronômetro para 5 minutos
-
-
-
-## 📞 Comunicação Durante o Hackathon
-
-- **Discord/Slack**: Canal dedicado para updates
-- **Commits**: A cada feature completa
-- **Stand-ups**: 8h, 14h, 18h (5 min cada)
-- **Bloqueios**: Avisar IMEDIATAMENTE
 
 ---
 
