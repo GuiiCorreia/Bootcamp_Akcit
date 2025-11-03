@@ -67,7 +67,7 @@ graph TB
     subgraph "Data Layer"
         PG[(PostgreSQL)]
         REDIS[(Redis Cache)]
-        VECTOR[(ChromaDB)]
+        VECTOR[(Qdrant)]
     end
     
     UI <--> API
@@ -161,7 +161,7 @@ marketmind/
 │   │   ├── orchestrator.py      # LangGraph
 │   │   ├── config.py
 │   │   ├── cache.py             # Redis
-│   │   └── vectorstore.py       # ChromaDB
+│   │   └── vectorstore.py       # Qdrant
 │   ├── api/
 │   │   ├── main.py              # FastAPI
 │   │   ├── routes/
@@ -191,7 +191,7 @@ marketmind/
 | Celery | 5.3+ | Tasks assíncronas | - |
 | Redis | 7+ | Cache + Queue | - |
 | PostgreSQL | 15+ | Dados persistentes | - |
-| ChromaDB | 0.4+ | Vector store | - |
+| Qdrant | 0.4+ | Vector store | - |
 
 ### Frontend
 | Tecnologia | Versão | Uso | Responsável |
@@ -324,7 +324,7 @@ gantt
     title Domingo Tarde
     dateFormat HH:mm
     section RAG
-    ChromaDB setup      :14:00, 1h
+    Qdrant setup      :14:00, 1h
     RAG implementation  :15:00, 1h
     section Testing
     Testes integrados   :16:00, 1h
