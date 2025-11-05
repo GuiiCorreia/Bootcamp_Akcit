@@ -9,7 +9,9 @@
 - [ ] Mapeamento de competidores (identificação, análise, posicionamento)
 - [ ] Análise de presença digital (redes sociais, SEO, sentiment)
 - [ ] Identificação de tendências (notícias, papers, sinais emergentes)
+- [ ] Pesquisa acadêmica (papers, estudos científicos, alinhamento com academia)
 - [ ] Inteligência financeira (investimentos, valuations)
+- [ ] Query rewriting para expansão de contexto
 - [ ] Geração de relatório executivo estruturado
 - [ ] Sistema RAG para Q&A sobre dados coletados
 
@@ -25,24 +27,26 @@
 ```mermaid
 graph TD
     A[User Input] --> B[Synthesis Agent]
-    B --> C{Task Decomposition}
+    B --> C{Task Decomposition + Query Rewriting}
     
     C -->|Parallel| D[Market Research Agent]
     C -->|Parallel| E[Competitor Agent]
     C -->|Parallel| F[Digital Presence Agent]
     C -->|Parallel| G[News & Trends Agent]
     C -->|Parallel| H[Financial Agent]
+    C -->|Parallel| I[Paper Research Agent]
     
-    D --> I[Shared Context]
-    E --> I
-    F --> I
-    G --> I
-    H --> I
+    D --> J[Shared Context]
+    E --> J
+    F --> J
+    G --> J
+    H --> J
+    I --> J
     
-    I --> J[Synthesis Agent]
-    J --> K[Report Generation]
-    K --> L[Vector Store/RAG]
-    L --> M[Output]
+    J --> K[Synthesis Agent]
+    K --> L[Report Generation]
+    L --> M[Vector Store/RAG]
+    M --> N[Output]
 ```
 
 ### Arquitetura de Componentes
@@ -60,6 +64,7 @@ graph TB
     
     subgraph "Processing Layer"
         ORCH[Orchestrator/LangGraph]
+        QR[Query Rewriter]
         AGENTS[Agent Pool]
         TOOLS[Tool Registry]
     end
@@ -73,6 +78,8 @@ graph TB
     UI <--> API
     WS <--> WSS
     API --> ORCH
+    ORCH --> QR
+    QR --> AGENTS
     ORCH --> AGENTS
     AGENTS --> TOOLS
     ORCH --> PG
@@ -88,16 +95,27 @@ class SynthesisAgent:
     """
     Responsável por:
     - Decompor query em tarefas
+    - Implementar query rewriting para expansão de contexto
     - Coordenar execução paralela
     - Resolver conflitos de dados
     - Gerar insights finais
     """
     
     tools = []  # Não usa tools externas
-    llm = "gpt-4-turbo"
+    llm = "gemini-2.5-flash-lite"
     
-    def decompose_task(query: str) -> List[Task]:
-        # Lógica de decomposição
+    def rewrite_queries(query: str) -> List[str]:
+        """
+        Gera variações da query original para aumentar cobertura:
+        - Reformulação técnica
+        - Variações de linguagem
+        - Expansão de termos
+        - Queries relacionadas
+        """
+        pass
+    
+    def decompose_task(query: str, rewritten_queries: List[str]) -> List[Task]:
+        # Lógica de decomposição com contexto expandido
         pass
     
     def synthesize_results(results: Dict) -> Report:
@@ -117,7 +135,7 @@ class MarketResearchAgent:
         "statista_api",    # Estatísticas setoriais
         "web_search"       # Relatórios públicos
     ]
-    llm = "gpt-3.5-turbo"
+    llm = "gemini-2.5-flash-lite"
 ```
 
 ### 3. Competitor Agent
@@ -132,7 +150,103 @@ class CompetitorAgent:
         "google_places",   # Localização
         "linkedin_api"     # Dados corporativos
     ]
-    llm = "gpt-3.5-turbo"
+    llm = "gemini-2.5-flash-lite"
+```
+
+### 4. Digital Presence Agent
+```python
+class DigitalPresenceAgent:
+    """
+    Analisa presença digital e sentiment
+    """
+    tools = [
+        "social_media_api", # Twitter, Instagram, etc
+        "seo_tools",        # Análise SEO
+        "sentiment_api",    # Análise de sentimento
+        "reddit_api"        # Discussões públicas
+    ]
+    llm = "gemini-2.5-flash-lite"
+```
+
+### 5. News & Trends Agent
+```python
+class NewsTrendsAgent:
+    """
+    Identifica tendências e notícias recentes
+    """
+    tools = [
+        "newsapi",         # Notícias
+        "google_trends",   # Tendências de busca
+        "web_search",      # Busca geral
+        "rss_feeds"        # Feeds especializados
+    ]
+    llm = "gemini-2.5-flash-lite"
+```
+
+### 6. Paper Research Agent 🆕
+```python
+class PaperResearchAgent:
+    """
+    Busca e analisa papers acadêmicos para:
+    - Validar tendências de mercado com evidências científicas
+    - Identificar tecnologias emergentes
+    - Fornecer embasamento técnico para insights
+    - Alinhar análise de mercado com pesquisa acadêmica
+    
+    Utiliza query rewriting para maximizar cobertura:
+    - Termos técnicos vs coloquiais
+    - Sinônimos e variações
+    - Queries em inglês (maioria dos papers)
+    """
+    tools = [
+        "arxiv_api",           # Papers de CS, Physics, Math
+        "semantic_scholar",    # Busca acadêmica geral
+        "pubmed_api",          # Papers médicos/biológicos
+        "google_scholar",      # Busca ampla
+        "crossref_api",        # Metadados de publicações
+        "core_api"             # Open access papers
+    ]
+    llm = "gemini-2.5-flash-lite"
+    
+    def rewrite_academic_query(self, query: str) -> List[str]:
+        """
+        Gera variações acadêmicas da query:
+        - Tradução para inglês
+        - Termos técnicos
+        - Sinônimos científicos
+        - Queries relacionadas
+        """
+        pass
+    
+    def filter_relevant_papers(self, papers: List[Paper], query: str) -> List[Paper]:
+        """
+        Filtra papers por relevância, recência e citações
+        """
+        pass
+    
+    def extract_insights(self, papers: List[Paper]) -> Dict:
+        """
+        Extrai insights dos papers:
+        - Tendências tecnológicas
+        - Validação científica de claims
+        - Gaps de pesquisa = oportunidades
+        """
+        pass
+```
+
+### 7. Financial Agent
+```python
+class FinancialAgent:
+    """
+    Coleta inteligência financeira
+    """
+    tools = [
+        "alpha_vantage",   # Dados de ações
+        "crunchbase",      # Funding de startups
+        "yahoo_finance",   # Dados financeiros
+        "sec_edgar"        # Relatórios corporativos
+    ]
+    llm = "gemini-2.5-flash-lite"
 ```
 
 ## 📦 Estrutura de Diretórios
@@ -141,11 +255,12 @@ marketmind/
 ├── backend/
 │   ├── agents/
 │   │   ├── base.py              # Classe base dos agentes
-│   │   ├── synthesis.py         # Orquestrador
+│   │   ├── synthesis.py         # Orquestrador + Query Rewriting
 │   │   ├── market.py
 │   │   ├── competitor.py
 │   │   ├── digital.py
 │   │   ├── news.py
+│   │   ├── paper_research.py    # 🆕 Agente de Papers
 │   │   └── financial.py
 │   ├── tools/
 │   │   ├── registry.py          # Registro de ferramentas
@@ -153,12 +268,16 @@ marketmind/
 │   │   │   ├── ibge.py
 │   │   │   ├── serpapi.py
 │   │   │   ├── newsapi.py
+│   │   │   ├── arxiv.py         # 🆕
+│   │   │   ├── semantic_scholar.py  # 🆕
+│   │   │   ├── pubmed.py        # 🆕
 │   │   │   └── ...
 │   │   └── scrapers/
 │   │       ├── firecrawl.py
 │   │       └── beautifulsoup.py
 │   ├── core/
 │   │   ├── orchestrator.py      # LangGraph
+│   │   ├── query_rewriter.py    # 🆕 Query Rewriting
 │   │   ├── config.py
 │   │   ├── cache.py             # Redis
 │   │   └── vectorstore.py       # Qdrant
@@ -224,6 +343,27 @@ Essenciais:
     - Free: 100 requests/dia
     - Uso: Notícias recentes
 
+Papers/Academia: # 🆕
+  arXiv API:
+    - Free: Ilimitado
+    - Uso: Papers de CS, Physics, Math
+    
+  Semantic Scholar:
+    - Free: 100 req/5min
+    - Uso: Busca acadêmica + citações
+    
+  PubMed API:
+    - Free: Ilimitado (com rate limit)
+    - Uso: Papers médicos/biológicos
+    
+  CORE API:
+    - Free: 1000 req/dia
+    - Uso: Open access papers
+    
+  CrossRef:
+    - Free: Ilimitado
+    - Uso: Metadados de publicações
+
 Complementares:
   Alpha Vantage:
     - Free: 500 calls/dia
@@ -264,7 +404,7 @@ gantt
     Estrutura base      :08:00, 30m
     Configurações       :08:30, 30m
     section Backend Core
-    Synthesis Agent     :09:00, 1h
+    Synthesis Agent + Query Rewriting :09:00, 1h
     2 Agentes básicos   :10:00, 2h
     section Integração
     3 APIs principais   :12:00, 1h
@@ -272,7 +412,7 @@ gantt
 
 **Entregáveis Manhã:**
 - [ ] Projeto estruturado
-- [ ] Synthesis Agent funcional
+- [ ] Synthesis Agent com query rewriting
 - [ ] Market + Competitor agents básicos
 - [ ] Integração com SerpAPI, NewsAPI, Firecrawl
 
@@ -283,16 +423,19 @@ gantt
     dateFormat HH:mm
     section Agentes
     Digital Agent       :14:00, 1h
-    News Agent          :15:00, 1h
-    Financial Agent     :16:00, 1h
+    News Agent          :15:00, 45m
+    Paper Research Agent :15:45, 1h15m
+    Financial Agent     :17:00, 45m
     section Orquestração
-    LangGraph setup     :17:00, 1h
-    Execução paralela   :18:00, 1h
+    LangGraph setup     :17:45, 45m
+    Execução paralela   :18:30, 30m
 ```
 
 **Entregáveis Tarde:**
-- [ ] Todos 5 agentes especializados
+- [ ] Todos 6 agentes especializados (incluindo Paper Research)
 - [ ] Orquestração com LangGraph
+- [ ] Query rewriting implementado
+- [ ] Integração com APIs acadêmicas (arXiv, Semantic Scholar)
 - [ ] Compartilhamento de contexto
 - [ ] Cache Redis básico
 
@@ -314,8 +457,8 @@ gantt
 
 **Entregáveis Manhã:**
 - [ ] Frontend funcionando
-- [ ] Visualização real-time dos agentes
-- [ ] Geração de relatório PDF
+- [ ] Visualização real-time dos agentes (incluindo Paper Research)
+- [ ] Geração de relatório PDF com seção acadêmica
 - [ ] UI polida
 
 #### Tarde (14h-19h30) - 5h30min - FINALIZAÇÃO
@@ -337,7 +480,7 @@ gantt
 ```
 
 **Entregáveis Tarde:**
-- [ ] RAG funcionando
+- [ ] RAG funcionando (incluindo papers no vector store)
 - [ ] Sistema testado end-to-end
 - [ ] Deploy em produção
 - [ ] Apresentação preparada
@@ -348,17 +491,24 @@ gantt
 
 1. **Teste Básico**: "Energia solar em Goiás"
    - Validar todos os agentes retornam dados
+   - Paper Research Agent encontra papers relevantes
    - Tempo < 5 minutos
-   - Relatório gerado com sucesso
+   - Relatório gerado com seção acadêmica
 
-2. **Teste de Stress**: Executar 3 análises simultâneas
+2. **Teste Query Rewriting**: Verificar expansão de contexto
+   - Query original gera 3-5 variações
+   - Variações capturam dados complementares
+   - Papers encontrados são relevantes
+
+3. **Teste de Stress**: Executar 3 análises simultâneas
    - Verificar paralelização
    - Monitorar uso de memória
    - Validar cache
 
-3. **Teste de Qualidade**: Comparar com pesquisa manual
+4. **Teste de Qualidade**: Comparar com pesquisa manual
    - Precisão dos dados de mercado
    - Competidores identificados corretamente
+   - Papers são relevantes e recentes
    - Insights fazem sentido
 
 ## 🚨 Riscos e Mitigações
@@ -367,9 +517,24 @@ gantt
 |-------|---------------|---------|-----------|
 | Rate limit de APIs | Alta | Alto | Cache agressivo + APIs alternativas |
 | LLM hallucination | Média | Alto | Validação cruzada + citação obrigatória |
+| Papers irrelevantes | Média | Médio | Filtros de relevância + threshold de citações |
 | Tempo > 5 min | Média | Médio | Timeout + resultado parcial |
+| Query rewriting ineficaz | Baixa | Médio | Prompts bem calibrados + exemplos |
 | Crash durante demo | Baixa | Alto | Video backup + deploy redundante |
 
+## 💡 Benefícios do Paper Research Agent
+
+### Para o Sistema
+- ✅ **Validação Científica**: Claims de mercado validados com papers
+- ✅ **Contexto Expandido**: Query rewriting aumenta cobertura de dados
+- ✅ **Diferencial Competitivo**: Poucos sistemas integram academia + mercado
+- ✅ **Identificação de Trends**: Papers mostram tecnologias antes do mercado
+
+### Para o Relatório
+- 📊 **Seção "Evidências Acadêmicas"**: Papers relevantes citados
+- 🔬 **Validação Técnica**: Insights embasados cientificamente
+- 🚀 **Tecnologias Emergentes**: Pesquisas apontam futuro do setor
+- 📈 **Gaps de Pesquisa**: Oportunidades de mercado não exploradas
 
 ---
 
