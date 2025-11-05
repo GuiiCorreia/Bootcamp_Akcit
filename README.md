@@ -36,17 +36,79 @@ graph TD
     C -->|Parallel| H[Financial Agent]
     C -->|Parallel| I[Paper Research Agent]
     
-    D --> J[Shared Context]
-    E --> J
-    F --> J
-    G --> J
-    H --> J
-    I --> J
+    D -->|MCP Client| D1[Gov Data MCP + Brave MCP + DDG]
+    E -->|MCP Client| E1[Brave MCP + Firecrawl MCP + GitHub]
+    F -->|MCP Client| F1[Social MCP + Brave MCP + News MCP]
+    G -->|MCP Client| G1[News MCP + Brave MCP + Social MCP]
+    H -->|MCP Client| H1[Finance MCP + Brave MCP]
+    I -->|MCP Client| I1[Academic MCP]
+    
+    D1 --> J[Shared Context]
+    E1 --> J
+    F1 --> J
+    G1 --> J
+    H1 --> J
+    I1 --> J
     
     J --> K[Synthesis Agent]
     K --> L[Report Generation]
     L --> M[Vector Store/RAG]
     M --> N[Output]
+```
+
+### Arquitetura de Componentes
+```mermaid
+graph TB
+    subgraph "Frontend Layer"
+        UI[React App]
+        WS[WebSocket Client]
+    end
+    
+    subgraph "API Layer"
+        API[FastAPI]
+        WSS[WebSocket Server]
+    end
+    
+    subgraph "Processing Layer"
+        ORCH[Orchestrator/LangGraph]
+        QR[Query Rewriter]
+        AGENTS[Agent Pool]
+        MCP_CLIENT[MCP Client]
+    end
+    
+    subgraph "MCP Servers Layer"
+        MCP_FIRECRAWL[Firecrawl MCP]
+        MCP_BRAVE[Brave Search MCP]
+        MCP_ACADEMIC[Academic APIs MCP]
+        MCP_SOCIAL[Social Media MCP]
+        MCP_FINANCE[Finance MCP]
+        MCP_NEWS[News MCP]
+    end
+    
+    subgraph "Data Layer"
+        PG[(PostgreSQL)]
+        REDIS[(Redis Cache)]
+        VECTOR[(Qdrant)]
+    end
+    
+    UI <--> API
+    WS <--> WSS
+    API --> ORCH
+    ORCH --> QR
+    QR --> AGENTS
+    AGENTS --> MCP_CLIENT
+    
+    MCP_CLIENT --> MCP_FIRECRAWL
+    MCP_CLIENT --> MCP_BRAVE
+    MCP_CLIENT --> MCP_ACADEMIC
+    MCP_CLIENT --> MCP_SOCIAL
+    MCP_CLIENT --> MCP_FINANCE
+    MCP_CLIENT --> MCP_NEWS
+    
+    MCP_FIRECRAWL --> REDIS
+    MCP_BRAVE --> REDIS
+    ORCH --> PG
+    AGENTS --> VECTOR
 ```
 
 ### Arquitetura de Componentes
@@ -130,10 +192,11 @@ class MarketResearchAgent:
     Coleta: TAM, SAM, SOM, crescimento, segmentação
     """
     tools = [
-        "ibge_api",        # Dados BR
-        "world_bank_api",  # Dados globais
-        "statista_api",    # Estatísticas setoriais
-        "web_search"       # Relatórios públicos
+        "ibge_api",        # ∞ gratuito - Dados BR
+        "world_bank_api",  # ∞ gratuito - Dados globais
+        "brave_search",    # 2000 queries/mês gratuito
+        "duckduckgo_search", # ∞ gratuito
+        "web_scraping"     # Beautiful Soup para sites públicos
     ]
     llm = "gemini-2.5-flash-lite"
 ```
@@ -145,10 +208,11 @@ class CompetitorAgent:
     Identifica e analisa competidores
     """
     tools = [
-        "firecrawl",       # Web scraping
-        "similarweb_api",  # Analytics
-        "google_places",   # Localização
-        "linkedin_api"     # Dados corporativos
+        "brave_search",    # Busca de competidores
+        "duckduckgo_search", # Busca alternativa
+        "firecrawl",       # 500 pages/mês gratuito - Web scraping
+        "web_scraping",    # Beautiful Soup para sites
+        "github_api",      # ∞ gratuito - Análise de repos
     ]
     llm = "gemini-2.5-flash-lite"
 ```
@@ -160,10 +224,13 @@ class DigitalPresenceAgent:
     Analisa presença digital e sentiment
     """
     tools = [
-        "social_media_api", # Twitter, Instagram, etc
-        "seo_tools",        # Análise SEO
-        "sentiment_api",    # Análise de sentimento
-        "reddit_api"        # Discussões públicas
+        "reddit_api",      # 60 req/min gratuito
+        "youtube_api",     # 10k quota/dia gratuito
+        "brave_search",    # Análise SEO via busca
+        "duckduckgo_search", # Busca alternativa
+        "firecrawl",       # Scraping de sites
+        "web_scraping",    # Reviews de sites públicos
+        "google_trends"    # pytrends - gratuito ilimitado
     ]
     llm = "gemini-2.5-flash-lite"
 ```
@@ -175,10 +242,12 @@ class NewsTrendsAgent:
     Identifica tendências e notícias recentes
     """
     tools = [
-        "newsapi",         # Notícias
-        "google_trends",   # Tendências de busca
-        "web_search",      # Busca geral
-        "rss_feeds"        # Feeds especializados
+        "newsapi",         # 100 requests/dia gratuito
+        "brave_search",    # Notícias via busca
+        "duckduckgo_search", # Busca de notícias
+        "rss_feeds",       # Gratuito ilimitado
+        "google_trends",   # pytrends - gratuito
+        "reddit_api"       # Trending topics
     ]
     llm = "gemini-2.5-flash-lite"
 ```
@@ -199,12 +268,10 @@ class PaperResearchAgent:
     - Queries em inglês (maioria dos papers)
     """
     tools = [
-        "arxiv_api",           # Papers de CS, Physics, Math
-        "semantic_scholar",    # Busca acadêmica geral
-        "pubmed_api",          # Papers médicos/biológicos
-        "google_scholar",      # Busca ampla
-        "crossref_api",        # Metadados de publicações
-        "core_api"             # Open access papers
+        "arxiv_api",           # ∞ gratuito - Papers de CS, Physics, Math
+        "semantic_scholar",    # 100 req/5min gratuito - Busca acadêmica geral
+        "pubmed_api",          # ∞ gratuito - Papers médicos/biológicos
+        "core_api",            # 1000 req/dia gratuito - Open access papers
     ]
     llm = "gemini-2.5-flash-lite"
     
@@ -241,13 +308,51 @@ class FinancialAgent:
     Coleta inteligência financeira
     """
     tools = [
-        "alpha_vantage",   # Dados de ações
-        "crunchbase",      # Funding de startups
-        "yahoo_finance",   # Dados financeiros
-        "sec_edgar"        # Relatórios corporativos
+        "yahoo_finance",   # yfinance lib - gratuito ilimitado
+        "alpha_vantage",   # 500 calls/dia gratuito
+        "polygon_api",     # 5 calls/min gratuito
+        "brave_search",    # Funding via busca
+        "duckduckgo_search", # Notícias financeiras
     ]
     llm = "gemini-2.5-flash-lite"
 ```
+
+## 🔌 Integração via MCP Server
+
+Para facilitar o acesso às APIs externas, o MarketMind utiliza um **MCP (Model Context Protocol) Server** que centraliza as chamadas às ferramentas externas. O MCP Server expõe as tools via API HTTP, permitindo que os agentes Python acessem múltiplas fontes de dados de forma padronizada.
+
+### Configuração MCP
+```python
+# backend/config/mcp_config.py
+MCP_SERVER_URL = "https://mcp.marketmind.io/execute"
+MCP_SERVER_TOKEN = os.getenv("MCP_SERVER_TOKEN")
+
+# Tools disponíveis via MCP
+MCP_TOOLS = [
+    "brave_search", "firecrawl", "arxiv_api", "semantic_scholar",
+    "pubmed_api", "ibge_api", "world_bank_api", "reddit_api",
+    "youtube_api", "newsapi", "alpha_vantage", "yahoo_finance"
+]
+```
+
+### Cliente MCP
+```python
+# backend/tools/mcp_client.py
+class MCPClient:
+    """Cliente para acessar tools via MCP Server"""
+    
+    async def call_tool(self, tool_name: str, params: dict) -> dict:
+        """Faz chamada HTTP para MCP Server"""
+        async with aiohttp.ClientSession() as session:
+            response = await session.post(
+                MCP_SERVER_URL,
+                json={"tool": tool_name, "parameters": params},
+                headers={"Authorization": f"Bearer {MCP_SERVER_TOKEN}"}
+            )
+            return await response.json()
+```
+
+As ferramentas Python nativas (DuckDuckGo, Beautiful Soup, pytrends) continuam sendo acessadas diretamente, sem passar pelo MCP.
 
 ## 📦 Estrutura de Diretórios
 ```
@@ -264,17 +369,12 @@ marketmind/
 │   │   └── financial.py
 │   ├── tools/
 │   │   ├── registry.py          # Registro de ferramentas
+│   │   ├── mcp_client.py        # 🆕 Cliente MCP
 │   │   ├── apis/
-│   │   │   ├── ibge.py
-│   │   │   ├── serpapi.py
-│   │   │   ├── newsapi.py
-│   │   │   ├── arxiv.py         # 🆕
-│   │   │   ├── semantic_scholar.py  # 🆕
-│   │   │   ├── pubmed.py        # 🆕
-│   │   │   └── ...
-│   │   └── scrapers/
-│   │       ├── firecrawl.py
-│   │       └── beautifulsoup.py
+│   │   │   ├── duckduckgo.py    # Python direto
+│   │   │   ├── beautifulsoup.py # Python direto
+│   │   │   └── pytrends.py      # Python direto
+│   │   └── github.py            # GitHub API (opcional)
 │   ├── core/
 │   │   ├── orchestrator.py      # LangGraph
 │   │   ├── query_rewriter.py    # 🆕 Query Rewriting
@@ -311,6 +411,12 @@ marketmind/
 | Redis | 7+ | Cache + Queue | - |
 | PostgreSQL | 15+ | Dados persistentes | - |
 | Qdrant | 0.4+ | Vector store | - |
+| Beautiful Soup | 4.12+ | Web scraping | - |
+| Requests | 2.31+ | HTTP client | - |
+| duckduckgo-search | 6+ | DuckDuckGo API | - |
+| pytrends | 4.9+ | Google Trends | - |
+| feedparser | 6.0+ | RSS feeds | - |
+| yfinance | 0.2+ | Yahoo Finance | - |
 
 ### Frontend
 | Tecnologia | Versão | Uso | Responsável |
@@ -327,23 +433,16 @@ marketmind/
 ### Tier Gratuito Disponível
 ```yaml
 Essenciais:
-  OpenAI:
+  Gemini:
     - Custo: ~$0.01 por request
     - Uso: LLMs e embeddings
-    
-  Firecrawl:
-    - Free: 500 pages/mês
-    - Uso: Scraping de sites
-    
-  SerpAPI:
-    - Free: 100 searches/mês
-    - Uso: Google search
-    
-  NewsAPI:
-    - Free: 100 requests/dia
-    - Uso: Notícias recentes
+  
+  MCP Server:
+    - Custo: $0.00 (agrupa APIs gratuitas)
+    - Uso: Acesso centralizado a múltiplas APIs
+    - Ferramentas: Brave, Firecrawl, APIs acadêmicas, sociais, financeiras
 
-Papers/Academia: # 🆕
+Papers/Academia (via MCP):
   arXiv API:
     - Free: Ilimitado
     - Uso: Papers de CS, Physics, Math
@@ -359,36 +458,49 @@ Papers/Academia: # 🆕
   CORE API:
     - Free: 1000 req/dia
     - Uso: Open access papers
-    
-  CrossRef:
-    - Free: Ilimitado
-    - Uso: Metadados de publicações
 
-Complementares:
+Complementares (via MCP):
+  Brave Search:
+    - Free: 2000 queries/mês
+    - Uso: Web search
+  
+  Firecrawl:
+    - Free: 500 pages/mês
+    - Uso: Web scraping avançado
+  
   Alpha Vantage:
     - Free: 500 calls/dia
     - Uso: Dados financeiros
     
-  Google Trends:
-    - Free: Ilimitado (com rate limit)
-    - Uso: Tendências
-    
-  IBGE APIs:
-    - Free: Ilimitado
-    - Uso: Dados Brasil
+  NewsAPI:
+    - Free: 100 req/dia
+    - Uso: Notícias recentes
     
   Reddit API:
     - Free: 60 req/min
     - Uso: Discussões
+  
+  YouTube API:
+    - Free: 10k quota/dia
+    - Uso: Vídeos
 
-Opcionais (melhoram qualidade):
-  Crunchbase:
-    - Trial: 100 calls
-    - Uso: Startups/funding
+Python Nativo (sem MCP):
+  DuckDuckGo Search:
+    - Free: Ilimitado
+    - Uso: Web search
     
-  SimilarWeb:
-    - Trial: 50 queries
-    - Uso: Analytics
+  Google Trends:
+    - Free: Ilimitado (rate limit)
+    - Uso: Tendências
+  
+  IBGE APIs:
+    - Free: Ilimitado
+    - Uso: Dados Brasil
+  
+  Yahoo Finance:
+    - Free: Ilimitado
+    - Library: yfinance
+    - Uso: Dados financeiros
 ```
 
 ## 📅 Cronograma de Desenvolvimento
@@ -407,14 +519,15 @@ gantt
     Synthesis Agent + Query Rewriting :09:00, 1h
     2 Agentes básicos   :10:00, 2h
     section Integração
-    3 APIs principais   :12:00, 1h
+    MCP Client + 3 APIs :12:00, 1h
 ```
 
 **Entregáveis Manhã:**
 - [ ] Projeto estruturado
+- [ ] MCP Client funcionando
 - [ ] Synthesis Agent com query rewriting
 - [ ] Market + Competitor agents básicos
-- [ ] Integração com SerpAPI, NewsAPI, Firecrawl
+- [ ] Integração com 3 tools via MCP
 
 #### Tarde (14h-19h) - 5h - EXPANSÃO
 ```mermaid
@@ -435,7 +548,7 @@ gantt
 - [ ] Todos 6 agentes especializados (incluindo Paper Research)
 - [ ] Orquestração com LangGraph
 - [ ] Query rewriting implementado
-- [ ] Integração com APIs acadêmicas (arXiv, Semantic Scholar)
+- [ ] Integração com todas tools via MCP
 - [ ] Compartilhamento de contexto
 - [ ] Cache Redis básico
 
@@ -515,12 +628,13 @@ gantt
 
 | Risco | Probabilidade | Impacto | Mitigação |
 |-------|---------------|---------|-----------|
-| Rate limit de APIs | Alta | Alto | Cache agressivo + APIs alternativas |
+| Rate limit de APIs gratuitas | Média | Médio | Cache agressivo + múltiplas fontes alternativas |
 | LLM hallucination | Média | Alto | Validação cruzada + citação obrigatória |
 | Papers irrelevantes | Média | Médio | Filtros de relevância + threshold de citações |
 | Tempo > 5 min | Média | Médio | Timeout + resultado parcial |
 | Query rewriting ineficaz | Baixa | Médio | Prompts bem calibrados + exemplos |
 | Crash durante demo | Baixa | Alto | Video backup + deploy redundante |
+| MCP Server indisponível | Baixa | Médio | Fallback para tools Python nativas |
 
 ## 💡 Benefícios do Paper Research Agent
 
@@ -529,6 +643,7 @@ gantt
 - ✅ **Contexto Expandido**: Query rewriting aumenta cobertura de dados
 - ✅ **Diferencial Competitivo**: Poucos sistemas integram academia + mercado
 - ✅ **Identificação de Trends**: Papers mostram tecnologias antes do mercado
+- ✅ **Zero Custo**: APIs acadêmicas são 100% gratuitas
 
 ### Para o Relatório
 - 📊 **Seção "Evidências Acadêmicas"**: Papers relevantes citados
